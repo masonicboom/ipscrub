@@ -1,0 +1,24 @@
+version: "3"
+services:
+  nginx:
+    image: ipscrub
+    # deploy:
+    #   replicas: 1
+    ports:
+      - "31337:8081"
+    networks:
+      - net
+  client1:
+    image: ipscrub-demo-client
+    # deploy:
+    #   replicas: 2
+    networks:
+      - net
+  client2:
+    image: ipscrub-demo-client
+    # deploy:
+    #   replicas: 2
+    networks:
+      - net
+networks:
+  net:

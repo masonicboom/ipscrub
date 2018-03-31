@@ -1,0 +1,11 @@
+# Reference: https://www.nginx.com/resources/wiki/extending/new_config/.
+
+ngx_module_type=HTTP
+ngx_module_name=ngx_ipscrub_module
+ngx_module_deps="$ngx_addon_dir/src/ngx_ipscrub_support.h $ngx_addon_dir/src/ngx_ipscrub_debug.h"
+ngx_module_srcs="$ngx_addon_dir/src/ngx_ipscrub_module.c $ngx_addon_dir/src/ngx_ipscrub_support.c $ngx_addon_dir/src/ngx_ipscrub_debug.c"
+ngx_module_libs=SHA1
+
+. auto/module
+
+ngx_addon_name=$ngx_module_name
