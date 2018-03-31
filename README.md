@@ -61,7 +61,7 @@ Why are you logging IP addresses anyway? [You Ain't Gonna Need It](https://en.wi
 
 ## License
 
-Copyright 2018 Mason Simon
+Copyright 2018 [Mason Simon](https://masonsimon.com)
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
