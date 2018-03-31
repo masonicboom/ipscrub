@@ -2,7 +2,7 @@
 
 `ipscrub` is an IP address anonymizer for [nginx](https://www.nginx.com) log files. It's an nginx module that generates an IP-based hash. You can use this hash to link requests from the same source, without identifying your users by IP address.
 
-[![Screenshot of nginx logs when using ipscrub](demo/demo.png)](demo/demo.mov)
+![Screenshot of nginx logs when using ipscrub](demo/demo.png)
 
 ## TOC
 
