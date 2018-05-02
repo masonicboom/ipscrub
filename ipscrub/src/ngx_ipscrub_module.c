@@ -24,7 +24,7 @@ static ngx_http_variable_t ngx_http_ipscrub_vars[] = {
     {ngx_string("remote_addr_ipscrub"), NULL, ngx_http_variable_remote_addr_ipscrub, 0, 0, 0},
     {ngx_string("ipscrub_hash_debug"), NULL, ngx_http_variable_remote_addr_ipscrub_debug, 0, 0, 0},
     {ngx_string("ipscrub_salted_hash_debug"), NULL, ngx_http_variable_ipscrub_salted_hash_debug, 0, 0, 0},
-    ngx_http_null_variable};
+    {ngx_null_string, NULL, NULL, 0, 0, 0 }};
 
 
 static ngx_command_t  ngx_ipscrub_commands[] = {
