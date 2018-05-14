@@ -43,6 +43,10 @@ In your `nginx.conf`,
 1. In your `log_format` directives, replace `$remote_addr` with `$remote_addr_ipscrub`.
 1. Reload your nginx config.
 
+### Running Tests
+
+`make test`
+
 ## GDPR
 
 [GDPR](https://www.eugdpr.org) goes into effect on May 25, 2018. It legislates the handling of personal data about your users, including IP addresses.
