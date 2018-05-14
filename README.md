@@ -43,6 +43,8 @@ In your `nginx.conf`,
 1. In your `log_format` directives, replace `$remote_addr` with `$remote_addr_ipscrub`.
 1. Reload your nginx config.
 
+**NOTE**: nginx may still leak IP addresses in the error log. If this is a concern, disable error logging or wipe the log regularly.
+
 ### Running Tests
 
 `make test`
