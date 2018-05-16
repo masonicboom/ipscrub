@@ -34,7 +34,17 @@ Scenario (2) is defended against because the server operator does not know the s
 
 ## Usage
 
+### Installation
+
+#### Building From Source
+
 `ipscrub` can be built statically with nginx or as a [dynamic module](https://www.nginx.com/blog/compiling-dynamic-modules-nginx-plus/). See the `Makefile` for examples of both ways.
+
+#### Packages
+
+- [Arch Linux](https://aur.archlinux.org/packages/nginx-mod-ipscrub/) (thanks to https://github.com/deep-42-thought)
+
+### Configuration
 
 In your `nginx.conf`,
 
