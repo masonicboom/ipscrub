@@ -42,7 +42,7 @@ Scenario (2) is defended against because the server operator does not know the s
 
 #### Packages
 
-- [Arch Linux](https://aur.archlinux.org/packages/nginx-mod-ipscrub/) (thanks to https://github.com/deep-42-thought)
+- [Arch Linux](https://aur.archlinux.org/packages/nginx-mod-ipscrub/) (thanks to [deep-42-thought](https://github.com/deep-42-thought))
 
 ### Configuration
 
