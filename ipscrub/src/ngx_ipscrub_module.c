@@ -146,7 +146,6 @@ ngx_http_variable_remote_addr_ipscrub(ngx_http_request_t *r, ngx_http_variable_v
   // Regenerate salt if past end of period.
   time_t now = time(NULL);
   if (period_start == -1 || now - period_start > icf->period_seconds) {
-    // nonce = ngx_random();
     rc = randlong(&nonce);
     if (rc != NGX_OK) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
