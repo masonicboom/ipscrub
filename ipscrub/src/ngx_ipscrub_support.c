@@ -36,3 +36,24 @@ ngx_int_t concat(ngx_pool_t *pool, ngx_str_t prefix, ngx_str_t suffix, u_char **
 
   return NGX_OK;
 }
+
+// randlong fills out with secure random bytes and returns NGX_OK iff successful.
+ngx_int_t randlong(long *out) {
+  #if !(NGX_DARWIN || NGX_SOLARIS || NGX_FREEBSD || NGX_LINUX)
+    // Windows not supported a.t.m.
+    // TODO: support Windows (https://msdn.microsoft.com/en-us/library/sxtz2fa8.aspx).
+    return -1;
+  #endif
+
+  int rand = open("/dev/urandom", O_RDONLY);
+  if (rand < 0) {
+      return -1;
+  }
+
+  ssize_t ret = read(rand, out, sizeof(long));
+  if (ret != sizeof(long)) {
+      return -1;
+  }
+
+  return NGX_OK;
+}
