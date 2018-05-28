@@ -58,7 +58,6 @@ ngx_int_t randbytes(u_char *out, int num_bytes) {
     return NGX_ERROR;
   }
 
-
   arc4random_buf(out, num_bytes);
 
   return NGX_OK;
