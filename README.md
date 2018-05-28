@@ -15,7 +15,7 @@
 
 ## Security Model
 
-1. On initialization, and again every `PERIOD`, generate `salt` as `HASH(ngx_random() ++ timestamp)`.
+1. On initialization, and again every `PERIOD`, generate `salt` using 128bits from `arc4random_buf()`.
 2. On each request, generate masked IP address as `HASH(salt ++ IP address)`.
 3. Log masked IP address.
 

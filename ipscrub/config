@@ -4,7 +4,13 @@ ngx_module_type=HTTP
 ngx_module_name=ngx_ipscrub_module
 ngx_module_deps="$ngx_addon_dir/src/ngx_ipscrub_support.h $ngx_addon_dir/src/ngx_ipscrub_debug.h"
 ngx_module_srcs="$ngx_addon_dir/src/ngx_ipscrub_module.c $ngx_addon_dir/src/ngx_ipscrub_support.c $ngx_addon_dir/src/ngx_ipscrub_debug.c"
-ngx_module_libs=SHA1
+
+# On Linux, link with libbsd, to get arc4random.
+if [ `uname` = Linux ]; then
+    ngx_module_libs="SHA1 -lbsd"
+else
+    ngx_module_libs="SHA1"
+fi
 
 . auto/module
 
