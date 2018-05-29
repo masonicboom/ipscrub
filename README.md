@@ -15,11 +15,11 @@
 
 ## Security Model
 
-1. On initialization, and again every `PERIOD`, generate `salt` as `HASH(ngx_random() ++ timestamp)`.
+1. On initialization, and again every `PERIOD`, generate `salt` using 128bits from `arc4random_buf()`.
 2. On each request, generate masked IP address as `HASH(salt ++ IP address)`.
 3. Log masked IP address.
 
-`ipscrub` uses `ngx_random` to generate random nonces. `ngx_random` is defined as the C `random()` function on non-Windows platforms, and `rand()` on Windows. NOTE: this is not a cryptographically secure RNG, but for the following threat model, that is ok.
+`ipscrub` uses `arc4random` to generate random nonces (see [Theo de Raat's talk on arc4random](https://www.youtube.com/watch?v=aWmLWx8ut20) for a great overview). On Linux this requires installing [libbsd](https://libbsd.freedesktop.org/wiki/) (package libbsd-dev on Ubuntu/Debian). 
 
 ALSO NOTE: the generated hash WILL change on each `PERIOD` transition, so you will only have continuity within each `PERIOD`. But because users can transition between networks at any time (e.g. wifi -> cellular), you'd have this type of issue even if you were storing raw IPs.
 

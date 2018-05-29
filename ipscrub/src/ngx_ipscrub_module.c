@@ -42,7 +42,8 @@ static ngx_command_t  ngx_ipscrub_commands[] = {
 // Globals.
 const int default_period_seconds = 10 * 60; // Period between salt changes.
 time_t period_start = -1;
-long nonce = -1; // Input to salt generation.
+#define num_nonce_bytes 16
+u_char nonce[num_nonce_bytes]; // Input to salt generation.
 
 
 static ngx_http_module_t  ngx_ipscrub_module_ctx = {
@@ -146,13 +147,17 @@ ngx_http_variable_remote_addr_ipscrub(ngx_http_request_t *r, ngx_http_variable_v
   // Regenerate salt if past end of period.
   time_t now = time(NULL);
   if (period_start == -1 || now - period_start > icf->period_seconds) {
-    nonce = ngx_random();
+    rc = randbytes((u_char *) &nonce, num_nonce_bytes);
+    if (rc != NGX_OK) {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
     // TODO: actually calculate when period_start should have been.
     period_start = now;
   }
 
   salt.data = (u_char *) &nonce;
-  salt.len = sizeof(nonce);
+  salt.len = num_nonce_bytes;
 
   // Although ngx_crypt provides a salted SHA function, specified by a salt beginning with {SSHA}, that function exposes the salt in its result. For our security model, this is inappropriate. Instead, we use the regular nginx SHA function specified by {SHA}, and manually combine the nonce and plaintext.
   rc = concat(r->pool, r->connection->addr_text, salt, &combined);
