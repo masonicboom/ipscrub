@@ -41,7 +41,7 @@ Scenario (2) is defended against because the server operator does not know the s
 
 `ipscrub` can be built statically with nginx or as a [dynamic module](https://www.nginx.com/blog/compiling-dynamic-modules-nginx-plus/). See the `Makefile` for examples of both ways.
 
-### Configuration
+#### Configuration
 
 In your `nginx.conf`,
 
@@ -52,9 +52,15 @@ In your `nginx.conf`,
 
 **NOTE**: nginx may still leak IP addresses in the error log. If this is a concern, disable error logging or wipe the log regularly.
 
-### Running Tests
+#### Running Tests
 
 `make test`
+
+#### Checking for Updates
+
+`make check-up-to-date`
+
+This will have a non-zero exit code if you aren't up-to-date, so you can automate regular checks.
 
 ### Changelog
 

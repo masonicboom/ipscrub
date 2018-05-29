@@ -61,3 +61,6 @@ run-demo:
 	docker build -t ipscrub .
 	docker build -t ipscrub-demo-client demo/
 	docker-compose up --abort-on-container-exit
+
+check-up-to-date: script/check-up-to-date.sh
+	$<
