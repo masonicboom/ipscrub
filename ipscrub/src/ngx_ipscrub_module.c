@@ -16,12 +16,15 @@ static char * ngx_ipscrub_conf(ngx_conf_t *cf, void *conf);
 
 static ngx_int_t ngx_http_variable_remote_addr_ipscrub(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
+static ngx_int_t ngx_http_variable_proxy_protocol_addr_ipscrub(ngx_http_request_t *r,
+    ngx_http_variable_value_t *v, uintptr_t data);
 
 static ngx_int_t ngx_ipscrub_init(ngx_conf_t *cf);
 static ngx_int_t ngx_ipscrub_add_variables(ngx_conf_t *cf);
 
 static ngx_http_variable_t ngx_http_ipscrub_vars[] = {
     {ngx_string("remote_addr_ipscrub"), NULL, ngx_http_variable_remote_addr_ipscrub, 0, 0, 0},
+    {ngx_string("proxy_protocol_addr_ipscrub"), NULL, ngx_http_variable_proxy_protocol_addr_ipscrub, 0, 0, 0},
     {ngx_string("ipscrub_hash_debug"), NULL, ngx_http_variable_remote_addr_ipscrub_debug, 0, 0, 0},
     {ngx_string("ipscrub_salted_hash_debug"), NULL, ngx_http_variable_ipscrub_salted_hash_debug, 0, 0, 0},
     {ngx_null_string, NULL, NULL, 0, 0, 0 }};
@@ -132,7 +135,7 @@ ngx_ipscrub_add_variables(ngx_conf_t *cf)
 }
 
 static ngx_int_t
-ngx_http_variable_remote_addr_ipscrub(ngx_http_request_t *r, ngx_http_variable_value_t *v, uintptr_t data)
+real_ipscrub(ngx_str_t t, ngx_http_request_t *r, ngx_http_variable_value_t *v, uintptr_t data)
 {
   ngx_int_t   rc;
   u_char     *hashed;
@@ -160,7 +163,7 @@ ngx_http_variable_remote_addr_ipscrub(ngx_http_request_t *r, ngx_http_variable_v
   salt.len = num_nonce_bytes;
 
   // Although ngx_crypt provides a salted SHA function, specified by a salt beginning with {SSHA}, that function exposes the salt in its result. For our security model, this is inappropriate. Instead, we use the regular nginx SHA function specified by {SHA}, and manually combine the nonce and plaintext.
-  rc = concat(r->pool, r->connection->addr_text, salt, &combined);
+  rc = concat(r->pool, t, salt, &combined);
   if (rc != NGX_OK) {
       return NGX_HTTP_INTERNAL_SERVER_ERROR;
   }
@@ -174,9 +177,9 @@ ngx_http_variable_remote_addr_ipscrub(ngx_http_request_t *r, ngx_http_variable_v
   u_char *obscured = hashed + (sizeof("{SHA}") - 1);
 
   // Compute number of bytes to represent hashed address.
-  if (r->connection->addr_text.data[3] == '.' ||
-      r->connection->addr_text.data[2] == '.' ||
-      r->connection->addr_text.data[1] == '.') {
+  if (t.data[3] == '.' ||
+      t.data[2] == '.' ||
+      t.data[1] == '.') {
     // This is an IPv4 address.
     // IPv4 has a 32-bit address space. Base64 is 6 bits-per-char. ceil(32/6) = 6.
     len = 6;
@@ -193,4 +196,16 @@ ngx_http_variable_remote_addr_ipscrub(ngx_http_request_t *r, ngx_http_variable_v
   v->data = obscured;
 
   return NGX_OK;
+}
+
+static ngx_int_t
+ngx_http_variable_remote_addr_ipscrub(ngx_http_request_t *r, ngx_http_variable_value_t *v, uintptr_t data)
+{
+  return real_ipscrub(r->connection->addr_text, r, v, data);
+}
+
+static ngx_int_t
+ngx_http_variable_proxy_protocol_addr_ipscrub(ngx_http_request_t *r, ngx_http_variable_value_t *v, uintptr_t data)
+{
+  return real_ipscrub(r->connection->proxy_protocol_addr, r, v, data);
 }

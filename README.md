@@ -51,7 +51,7 @@ In your `nginx.conf`,
 
 1. At the top-level, load the module by adding the line `load_module ngx_ipscrub_module.so;` (NOTE: only if you built as a dynamic module).
 1. Set `ipscrub_period_seconds <NUM SECONDS PER PERIOD>;` (optional).
-1. In your `log_format` directives, replace `$remote_addr` with `$remote_addr_ipscrub`.
+1. In your `log_format` directives, replace `$remote_addr` with `$remote_addr_ipscrub` and `$proxy_protocol_addr` with `$proxy_protocol_addr_ipscrub`.
 1. Reload your nginx config.
 
 **NOTE**: nginx may still leak IP addresses in the error log. If this is a concern, disable error logging or wipe the log regularly.
