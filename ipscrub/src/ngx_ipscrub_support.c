@@ -58,7 +58,9 @@ ngx_int_t randbytes(u_char *out, int num_bytes) {
     return NGX_ERROR;
   }
 
-  arc4random_buf(out, num_bytes);
+  do{
+    arc4random_buf(out, num_bytes);
+  }while(ngx_strlen(out)<num_bytes); // ensure there is no \0 char among random data
 
   return NGX_OK;
 }
