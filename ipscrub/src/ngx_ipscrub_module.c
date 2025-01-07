@@ -13,12 +13,20 @@ typedef struct {
 
 static void * ngx_ipscrub_create_conf(ngx_conf_t *cf);
 static char * ngx_ipscrub_conf(ngx_conf_t *cf, void *conf);
+#define num_nonce_bytes 16
+typedef struct {
+  time_t period_number;
+  u_char nonce[num_nonce_bytes];
+} ngx_ipscrub_data_t;
 
 static ngx_int_t ngx_http_variable_remote_addr_ipscrub(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
 
 static ngx_int_t ngx_ipscrub_init(ngx_conf_t *cf);
 static ngx_int_t ngx_ipscrub_add_variables(ngx_conf_t *cf);
+
+static ngx_int_t ngx_ipscrub_shm_init(ngx_conf_t *cf);
+static ngx_int_t ngx_ipscrub_init_shm_zone(ngx_shm_zone_t *shm_zone, void *data);
 
 static ngx_http_variable_t ngx_http_ipscrub_vars[] = {
     {ngx_string("remote_addr_ipscrub"), NULL, ngx_http_variable_remote_addr_ipscrub, 0, 0, 0},
@@ -41,9 +49,8 @@ static ngx_command_t  ngx_ipscrub_commands[] = {
 
 // Globals.
 const int default_period_seconds = 10 * 60; // Period between salt changes.
-time_t period_start = -1;
-#define num_nonce_bytes 16
-u_char nonce[num_nonce_bytes]; // Input to salt generation.
+static ngx_shm_zone_t * ngx_ipscrub_shm_zone;
+static ngx_ipscrub_data_t * ngx_ipscrub_data; // NOTE: this will be pointing to area in shared memory
 
 
 static ngx_http_module_t  ngx_ipscrub_module_ctx = {
@@ -108,6 +115,7 @@ ngx_ipscrub_conf(ngx_conf_t *cf, void *conf)
 static ngx_int_t
 ngx_ipscrub_init(ngx_conf_t *cf)
 {
+  ngx_ipscrub_shm_init(cf);
   return ngx_ipscrub_add_variables(cf);
 }
 
@@ -131,6 +139,47 @@ ngx_ipscrub_add_variables(ngx_conf_t *cf)
   return NGX_OK;
 }
 
+
+/* Shared memory */
+/* Based on this blog post: */
+/* https://www.evanmiller.org/nginx-modules-guide-advanced.html#shm */
+static ngx_int_t
+ngx_ipscrub_shm_init(ngx_conf_t *cf)
+{
+
+  ngx_str_t        shm_name;
+  size_t           shm_size = 8 * ngx_pagesize; // minimum shm size is 8 pages, see https://trac.nginx.org/nginx/ticket/1665
+  ngx_str_set(&shm_name, "ipscrub");
+  ngx_ipscrub_shm_zone = ngx_shared_memory_add(cf, &shm_name, shm_size, &ngx_ipscrub_module);
+  if (ngx_ipscrub_shm_zone == NULL) {
+    return NGX_ERROR;
+  }
+  ngx_ipscrub_shm_zone->init = ngx_ipscrub_init_shm_zone;
+
+  return NGX_OK;
+
+}
+
+static ngx_int_t
+ngx_ipscrub_init_shm_zone(ngx_shm_zone_t *shm_zone, void *data)
+{
+  ngx_slab_pool_t  *shpool;
+
+  if (data) { /* we're being reloaded, propagate the data */
+    shm_zone->data = data;
+    return NGX_OK;
+  }
+
+  shpool = (ngx_slab_pool_t *) shm_zone->shm.addr;
+  ngx_ipscrub_data = ngx_slab_alloc(shpool, sizeof *ngx_ipscrub_data);
+  ngx_ipscrub_data->period_number=0;
+
+  shm_zone->data = ngx_ipscrub_data;
+
+  return NGX_OK;
+}
+
+
 static ngx_int_t
 ngx_http_variable_remote_addr_ipscrub(ngx_http_request_t *r, ngx_http_variable_value_t *v, uintptr_t data)
 {
@@ -144,19 +193,27 @@ ngx_http_variable_remote_addr_ipscrub(ngx_http_request_t *r, ngx_http_variable_v
   ngx_ipscrub_conf_t  *icf;
   icf = ngx_http_get_module_main_conf(r, ngx_ipscrub_module);
 
+  // grab the lock
+  ngx_slab_pool_t  *shpool;
+  shpool = (ngx_slab_pool_t *) ngx_ipscrub_shm_zone->shm.addr;
+  ngx_shmtx_lock(&shpool->mutex);
+
   // Regenerate salt if past end of period.
-  time_t now = time(NULL);
-  if (period_start == -1 || now - period_start > icf->period_seconds) {
-    rc = randbytes((u_char *) &nonce, num_nonce_bytes);
+  time_t this_period = ngx_time()/icf->period_seconds;
+  if (this_period > ngx_ipscrub_data->period_number) {
+    rc = randbytes((u_char *) ngx_ipscrub_data->nonce, num_nonce_bytes);
     if (rc != NGX_OK) {
+        ngx_shmtx_unlock(&shpool->mutex);
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    // TODO: actually calculate when period_start should have been.
-    period_start = now;
+    ngx_ipscrub_data->period_number = this_period;
   }
 
-  salt.data = (u_char *) &nonce;
+  // release the lock
+  ngx_shmtx_unlock(&shpool->mutex);
+
+  salt.data = (u_char *) ngx_ipscrub_data->nonce;
   salt.len = num_nonce_bytes;
 
   // Although ngx_crypt provides a salted SHA function, specified by a salt beginning with {SSHA}, that function exposes the salt in its result. For our security model, this is inappropriate. Instead, we use the regular nginx SHA function specified by {SHA}, and manually combine the nonce and plaintext.
